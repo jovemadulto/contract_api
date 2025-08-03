@@ -8,8 +8,8 @@ Trata-se de uma API RESTful construída com **FastAPI** que permite o upload de 
 
 ## ✨ Funcionalidades
 
-- 🔐 Login e autenticação via JWT (`/login`)
-- 📤 Upload de contratos (`/contracts/upload`)
+- 🔐 Login e autenticação via JWT (endpoint `/login`)
+- 📤 Upload de contratos (endpoint `/contracts/upload`)
 - 📄 Processamento com IA (nome das partes, valores, vigência etc.)
 - 🗃️ Armazenamento em banco SQLite
 - 🔎 Consulta de contratos por nome do arquivo (`/contracts/{filename}`)
@@ -30,11 +30,14 @@ Trata-se de uma API RESTful construída com **FastAPI** que permite o upload de 
 ### 1. Clonar o projeto e acessar a pasta
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/jovemadulto/contract_api.git
 cd contract_api
 ```
 
 ### 2. Criar o arquivo `.env` com sua chave da API Gemini (opcional)
+
+A chave API da Gemini deve ser gerada através da plataforma do [Google AI Studio](https://aistudio.google.com/apikey)
+
 
 ```env
 GEMINI_API_KEY=sua-chave-aqui
@@ -42,20 +45,28 @@ GEMINI_API_KEY=sua-chave-aqui
 
 ### 3. Rodar com Docker Compose
 
+O serviço é inicializado com o nome `api` no Docker.
+
 ```bash
-docker-compose up --build
+docker-compose up api
 ```
 
 Acesse a API em: [http://localhost:8000/docs](http://localhost:8000/docs)
 
+### 4. Rodar os testes com Docker Compose
+
+```bash
+docker-compose up test --build
+```
+
 ---
 
-## 🐍 Utilização com ambiente virtual Python
+## 🐍 Utilização com ambiente virtual Python (não recomendado)
 
 ### 1. Clonar o projeto e acessar a pasta
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/jovemadulto/contract_api.git
 cd contract_api
 ```
 
@@ -64,7 +75,7 @@ cd contract_api
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate   # Windows
+venv\Scripts\activate.bat   # Windows
 ```
 
 ### 3. Instalar as dependências
@@ -74,6 +85,8 @@ pip install -r requirements.txt
 ```
 
 ### 4. Criar o arquivo `.env` com sua chave da API Gemini
+
+A chave API da Gemini deve ser gerada através da plataforma do [Google AI Studio](https://aistudio.google.com/apikey)
 
 ```env
 GEMINI_API_KEY=sua-chave-aqui
@@ -99,7 +112,7 @@ pytest
 
 ---
 
-## 📦 Estrutura
+## 📦 Estrutura do projeto
 
 ```
 contract_api/
@@ -112,11 +125,10 @@ contract_api/
 │   ├── models.py
 │   └── schemas.py
 ├── tests/
+│   └── test_auth.py
 ├── .env
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
 └── README.md
 ```
-
----
