@@ -1,0 +1,40 @@
+import pytest
+from fastapi.testclient import TestClient
+from app.main import app
+from io import BytesIO
+import os
+
+client = TestClient(app)
+
+def get_token():
+    response = client.post("/login", data={"username": "admin", "password": "admin"})
+    return response.json()["access_token"]
+
+def test_upload_docx_contract(monkeypatch):
+    token = get_token()
+    
+    def mock_extract(*args, **kwargs):
+        return {
+            "parties": "Empresa A e Empresa B",
+            "monetary_values": "R$ 100.000",
+            "obligations": "Entrega mensal de serviços",
+            "additional_data": "Objeto: prestação de serviços; Vigência: 12 meses",
+            "termination_clause": "Aviso prévio de 30 dias"
+        }
+    monkeypatch.setattr("app.contracts.extract_contract_info", mock_extract)
+
+    docx_data = b"PK\\x03\\x04" + b"x" * 100  # Header mínimo de um .docx
+
+    response = client.post(
+        "/contracts/upload",
+        files={"file": ("test.docx", BytesIO(docx_data), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 200
+    assert response.json()["filename"] == "test.docx"
+
+def test_get_contract_by_filename():
+    token = get_token()
+    response = client.get("/contracts/test.docx", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert response.json()["filename"] == "test.docx"

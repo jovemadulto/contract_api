@@ -1,0 +1,11 @@
+fastapi
+google-genai
+pydantic
+PyMuPDF
+python-docx
+python-dotenv
+python-jose
+python-multipart
+pytest
+sqlalchemy
+uvicorn

@@ -1,0 +1,4 @@
+.env
+*.pyc
+*.wip # work in progress
+*.db
