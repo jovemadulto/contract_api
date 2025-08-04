@@ -9,6 +9,7 @@ Trata-se de uma API RESTful construída com **FastAPI** que permite o upload de 
 ## ✨ Funcionalidades
 
 - 🔐 Login e autenticação via JWT (endpoint `/login`)
+    - Credenciais padrão → admin:admin
 - 📤 Upload de contratos (endpoint `/contracts/upload`)
 - 📄 Processamento com IA (nome das partes, valores, vigência etc.)
 - 🗃️ Armazenamento em banco SQLite
