@@ -64,7 +64,26 @@ def extract_text_from_file(file: UploadFile):
         )
 
 
-@router.post("/contracts/upload", response_model=ContractData)
+@router.post(
+    "/contracts/upload",
+    response_model=ContractData,
+    tags=["contracts"],
+    summary="Envio de contratos para análise",
+    description="""
+Aceita documentos em formato *.pdf e *.docx.\n
+Envia o conteúdo de texto desses arquivos para a infraestrutura da Google para ser analisado pela Gemini.\n
+Atualmente só aceita o modelo `gemini-2.5-flash-lite`\n
+Retorna dados considerados críticos em uma análise de contratos, como:
+- Nome da parte contratante
+- Nome da parte contratada
+- Valor dos bens negociados
+- Obrigações da parte contratante
+- Obrigações da parte contratada
+- Objeto negociado
+- Vigência do contrato
+- Cláusulas de rescisão previstas
+""",
+)
 def upload_contract(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -80,9 +99,17 @@ def upload_contract(
     return contract
 
 
-@router.get("/contracts/{contract_name}", response_model=ContractData)
+@router.get(
+    "/contracts/{filename}",
+    response_model=ContractData,
+    tags=["contracts"],
+    summary="Recuperação de dados analisados",
+    description="""
+Recupera os dados de contratos submetidos para análise pelo serviço de inteligência artificial.
+""",
+)
 def get_contract(
-    contract_name: str, db: Session = Depends(get_db), user=Depends(get_current_user)
+    filename: str, db: Session = Depends(get_db), user=Depends(get_current_user)
 ):
     # Para fins de teste de aplicação, a verificação através do nome e UUID é suficiente
     # para recuperar o contrato correto.
@@ -90,7 +117,7 @@ def get_contract(
     # É necessário, porém, criar validação também para que o usuário possa recuperar
     # somente os contratos enviados por ele próprio, por questões de privacidade e negócio
 
-    contract = db.query(Contract).filter(Contract.filename == contract_name).first()
+    contract = db.query(Contract).filter(Contract.filename == filename).first()
     if not contract:
         raise HTTPException(status_code=404, detail="Contrato não encontrado")
     return contract
