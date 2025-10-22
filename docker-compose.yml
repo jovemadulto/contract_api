@@ -21,7 +21,7 @@ services:
     container_name: contract-api-test
     volumes:
       - .:/app
-    command: python -m pytest
+    command: python -m pytest -v
     env_file:
       - .env
     environment:

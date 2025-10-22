@@ -2,10 +2,11 @@ fastapi
 google-genai
 pydantic
 PyMuPDF
+pytest
 python-docx
 python-dotenv
 python-jose
 python-multipart
-pytest
+requests
 sqlalchemy
 uvicorn
