@@ -1,10 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
 from .auth import authenticate_user, create_access_token
-from .schemas import Token
 from .contracts import router as contracts_router
 from .database import Base, engine
+from .schemas import Token
 from dotenv import load_dotenv
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 import os
 
 load_dotenv()
@@ -42,6 +45,17 @@ app = FastAPI(
     openapi_tags=tags_metadata,
 )
 
+origins = ["*"]  # For development.
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 app.include_router(contracts_router)
 
 
@@ -51,3 +65,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=400, detail="Usuário ou senha inválidos")
     token = create_access_token(data={"sub": form_data.username})
     return {"access_token": token, "token_type": "bearer"}
+
+# This route serves your index.html file as the main page
+@app.get("/", response_class=FileResponse, include_in_schema=False)
+async def read_index():
+    return FileResponse("static/index.html")
+
+# Mounts the 'static' directory.
+# FastAPI will look for files in the 'static' folder if no other API route matches.
+app.mount("/static", StaticFiles(directory="static"), name="static")
