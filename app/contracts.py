@@ -8,6 +8,7 @@ from .ai_service import extract_contract_info
 import os
 from docx import Document
 import pymupdf
+import io
 
 router = APIRouter()
 
@@ -22,41 +23,57 @@ def get_db():
 
 def extract_text_from_file(file: UploadFile):
     if file.filename.endswith(".pdf"):
-        reader = pymupdf.open(file.filename)
-        pdf_content = []
+        try:
+            file_bytes = file.file.read()
+            reader = pymupdf.open(stream=file_bytes, filetype="pdf")
+            pdf_content = []
 
-        for page in reader.pages():
-            for block in page.get_text(option="blocks"):
-                _, _, _, _, content, _, block_type = block
-                if block_type == 0:
-                    # https://pymupdf.readthedocs.io/en/latest/textpage.html#TextPage.extractBLOCKS
-                    #
-                    # Blocks do tipo 0 são aqueles identificados como sendo de texto puro
-                    # Desta forma eliminamos a necessidade de consumir blocos de imagens
-                    # -- e a possibilidade de passar metadados delas -- como conteúdo
-                    # de texto para o modelo avaliar
-                    #
-                    # A abordagem de iterar sobre os blocos também pode se mostrar útil para facilitar o
-                    # descarte de pedaços do documento, como páginas e metadados de rodapé e de assinatura digital
-                    #
-                    # Essas decisões de projeto devem resultar em um consumo menor de tokens e
-                    # aumentar a qualidade da resposta
+            for page in reader.pages():
+                for block in page.get_text(option="blocks"):
+                    _, _, _, _, content, _, block_type = block
+                    if block_type == 0:
+                        # https://pymupdf.readthedocs.io/en/latest/textpage.html#TextPage.extractBLOCKS
+                        #
+                        # Blocks do tipo 0 são aqueles identificados como sendo de texto puro
+                        # Desta forma eliminamos a necessidade de consumir blocos de imagens
+                        # -- e a possibilidade de passar metadados delas -- como conteúdo
+                        # de texto para o modelo avaliar
+                        #
+                        # A abordagem de iterar sobre os blocos também pode se mostrar útil para facilitar o
+                        # descarte de pedaços do documento, como páginas e metadados de rodapé e de assinatura digital
+                        #
+                        # Essas decisões de projeto devem resultar em um consumo menor de tokens e
+                        # aumentar a qualidade da resposta
 
-                    pdf_content.append(content.strip())
+                        pdf_content.append(content.strip())
+            reader.close()
 
-        ## TO-DO : Implementar solução de OCR
+            ## TO-DO : Implementar solução de OCR
 
-        # Criar funções separadas para processar contratos em PDF:
-        # 1. Firmados em texto puro ✔
-        # 2. Escaneados
-        # 2.1 O PyMuPDF tem suporte de compatibilidade com o PyTesseract
-        #     https://pymupdf.readthedocs.io/en/latest/installation.html#installation-ocr
+            # Criar funções separadas para processar contratos em PDF:
+            # 1. Firmados em texto puro ✔
+            # 2. Escaneados
+            # 2.1 O PyMuPDF tem suporte de compatibilidade com o PyTesseract
+            #     https://pymupdf.readthedocs.io/en/latest/installation.html#installation-ocr
 
-        return "\n".join(pdf_content)
+            return "\n".join(pdf_content)
+        except Exception as e:
+            # Retorna erro caso o PDF esteja corrompido
+            raise HTTPException(
+                status_code=500,
+                detail=f"Erro ao processar o arquivo PDF: {e}"
+            )
     elif file.filename.endswith(".docx"):
-        doc = Document(file.file)
+        try:
+            doc = Document(file.file)
 
-        return "\n".join([p.text for p in doc.paragraphs])
+            return "\n".join([p.text for p in doc.paragraphs])
+        except Exception as e:
+            # Retorna erro caso o PDF esteja corrompido
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Erro ao processar o arquivo DOCX: {e}"
+                    )
     else:
         raise HTTPException(
             status_code=400,
@@ -89,7 +106,18 @@ def upload_contract(
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    text = extract_text_from_file(file)
+    try:
+        text = extract_text_from_file(file)
+    except HTTPException as e:
+        # Caso o extrator resulte em um erro
+        raise e
+    except Exception as e:
+        # Captura todos os outros erros para tratamento
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro inesperado durante a extração de texto: {str(e)}"
+        )
+    
     info = extract_contract_info(text)
 
     contract = Contract(filename=file.filename, **info)

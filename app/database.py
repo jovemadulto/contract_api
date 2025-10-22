@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
+import os
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./contracts.db"
+
+# USA A VARIÁVEL DE AMBIENTE 'DATABASE_URL'.
+# Se não for definida, usa o 'sqlite:///./contracts.db' como fallback.
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./contracts.db")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
