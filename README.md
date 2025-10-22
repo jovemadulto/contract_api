@@ -1,135 +1,119 @@
-# 📄 Contract API
+# Analisador de Contratos com IA | Biofy
 
-Este projeto foi criado como requisito de um teste técnico para o cargo de Desenvolvedor **Back-End Python especialista em Inteligência Artificial**.
+Este projeto é uma aplicação web completa que utiliza Inteligência Artificial Generativa (Google Gemini) para analisar contratos jurídicos. A aplicação é construída com **FastAPI** para o back-end e um front-end **HTML/CSS/JS** integrado, tudo containerizado com **Docker**.
 
-Trata-se de uma API RESTful construída com **FastAPI** que permite o upload de contratos em formato `.pdf` ou `.docx`, processa o texto utilizando uma API de IA (ex: Gemini) e armazena os dados extraídos em um banco de dados relacional para consulta posterior. Todos os endpoints são protegidos por autenticação JWT.
+A aplicação permite que um usuário autenticado faça o upload de um documento de contrato (`.pdf` or `.docx`). O back-end extrai o texto, o envia para a IA para análise e, em seguida, armazena e exibe os dados estruturados extraídos, como as partes, obrigações, valores e vigência.
 
----
+## Features
 
-## ✨ Funcionalidades
+  * **API Back-end:** API RESTful robusta construída com FastAPI.
+  * **Autenticação JWT:** Endpoints protegidos usando autenticação baseada em token JWT (`admin`/`admin`).
+  * **Upload de Arquivos:** Aceita arquivos `.pdf` e `.docx` para análise.
+  * **Extração de Texto:** Processa PDFs (incluindo leitura de stream de bytes para evitar `FileNotFoundError`) e documentos Word.
+  * **Análise com IA:** Integra-se com a API Google Gemini para extrair informações-chave do contrato, formatando a saída como JSON estruturado (incluindo listas para obrigações, partes, etc.).
+  * **Banco de Dados:** Armazena os resultados da análise em um banco de dados **SQLite**.
+  * **Front-end Integrado:** Um front-end de página única (SPA) servido diretamente pelo FastAPI.
+  * **UI Amigável:** O front-end lida com login, upload de arquivos e exibe os resultados da análise em uma lista HTML formatada e fácil de ler, em vez de JSON bruto.
+  * **Containerização:** Totalmente configurado para ser construído e executado com **Docker**.
 
-- 🔐 Login e autenticação via JWT (endpoint `/login`)
-    - Credenciais padrão → admin:admin
-- 📤 Upload de contratos (endpoint `/contracts/upload`)
-- 📄 Processamento com IA (nome das partes, valores, vigência etc.)
-- 🗃️ Armazenamento em banco SQLite
-- 🔎 Consulta de contratos por nome do arquivo (`/contracts/{filename}`)
-- 🐳 Suporte a Docker
-- 🧪 Estrutura básica para testes automatizados
+## Tech Stack
 
----
+  * **Back-end:** FastAPI, Uvicorn
+  * **Processamento de Documentos:** PyMuPDF (Fitz), python-docx
+  * **Banco de Dados:** SQLAlchemy, SQLite
+  * **IA:** Google Generative AI (Gemini)
+  * **Autenticação:** PyJWT
+  * **Containerização:** Docker
+  * **Front-end:** HTML5, CSS3, JavaScript (Vanilla)
 
-## ⚙️ Requisitos
+-----
 
-- Python 3.10+
-- Docker (opcional)
+## Setup e Execução
 
----
+Para executar este projeto, você precisará do [Docker](https://www.docker.com/) instalado.
 
-## 🚀 Utilização com Docker (recomendado)
+### 1\. Arquivo de Configuração (`.env`)
 
-### 1. Clonar o projeto e acessar a pasta
+Crie um arquivo `.env` na raiz do projeto. Este arquivo é crucial para armazenar suas chaves de API e segredos.
+
+```
+GEMINI_API_KEY=sua_chave_de_api_do_gemini_aqui
+JWT_SECRET_KEY=um_segredo_muito_forte_para_seus_tokens_jwt
+```
+
+> **Nota:** O usuário e senha padrão estão codificados em `app/auth.py` como `admin`/`admin`.
+
+### 2\. Construir a Imagem Docker
+
+Abra um terminal na raiz do projeto e execute:
 
 ```bash
-git clone https://github.com/jovemadulto/contract_api.git
-cd contract_api
+docker build -t contract-analyzer .
 ```
 
-### 2. Criar o arquivo `.env` com sua chave da API Gemini (opcional)
+### 3\. Executar o Container
 
-A chave API da Gemini deve ser gerada através da plataforma do [Google AI Studio](https://aistudio.google.com/apikey)
-
-
-```env
-GEMINI_API_KEY=sua-chave-aqui
-```
-
-### 3. Rodar com Docker Compose
-
-O serviço é inicializado com o nome `api` no Docker.
+Após a construção da imagem, inicie o container:
 
 ```bash
-docker-compose up api
+docker run -p 8000:8000 --env-file .env contract-analyzer
 ```
 
-Acesse a API em: [http://localhost:8000/docs](http://localhost:8000/docs)
+  * `-p 8000:8000`: Mapeia a porta 8000 do seu computador para a porta 8000 dentro do container.
+  * `--env-file .env`: Passa com segurança suas variáveis de ambiente para dentro do container.
 
-### 4. Rodar os testes com Docker Compose
+### 3\.1. Executar o Container com Docker Compose
 
 ```bash
-docker-compose up test --build
+# Constrói a imagem (se ainda não existir) e sobe o container
+# O -d executa em modo "detached" (em segundo plano)
+docker-compose up -d --build
 ```
 
----
+### 4\. Acessar a Aplicação
 
-## 🐍 Utilização com ambiente virtual Python (não recomendado)
+Abra seu navegador e acesse:
+**`http://localhost:8000/`**
 
-### 1. Clonar o projeto e acessar a pasta
+Você verá a interface de login. Use as credenciais padrão (`admin`/`admin`) para fazer o login e começar a enviar contratos.
 
-```bash
-git clone https://github.com/jovemadulto/contract_api.git
-cd contract_api
-```
+-----
 
-### 2. Criar e ativar o ambiente virtual
+## API Endpoints
 
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate.bat   # Windows
-```
+A aplicação expõe os seguintes endpoints:
 
-### 3. Instalar as dependências
+  * `GET /`: Serve a aplicação front-end `index.html`.
+  * `POST /login`: Recebe `username` e `password` (form-data) e retorna um `access_token` JWT.
+  * `POST /contracts/upload`: (Protegido) Recebe um `UploadFile`. Processa o arquivo, o analisa com IA, salva no DB e retorna a análise em JSON.
+  * `GET /contracts/{filename}`: (Protegido) Recupera os dados de uma análise de contrato salva pelo nome do arquivo.
+  * `GET /docs`: Acessa a documentação interativa da API (Swagger UI).
+  * `GET /redoc`: Acessa a documentação alternativa da API (ReDoc).
 
-```bash
-pip install -r requirements.txt
-```
+-----
 
-### 4. Criar o arquivo `.env` com sua chave da API Gemini
-
-A chave API da Gemini deve ser gerada através da plataforma do [Google AI Studio](https://aistudio.google.com/apikey)
-
-```env
-GEMINI_API_KEY=sua-chave-aqui
-```
-
-### 5. Rodar a aplicação
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Acesse a API em: [http://localhost:8000/docs](http://localhost:8000/docs)
-
----
-
-## 🧪 Testes
-
-Estrutura de testes presente na pasta `/tests`. Para rodar:
-
-```bash
-pytest
-```
-
----
-
-## 📦 Estrutura do projeto
+## Estrutura do projeto
 
 ```
 contract_api/
 ├── app/
-│   ├── main.py
-│   ├── auth.py
-│   ├── contracts.py
-│   ├── ai_service.py
-│   ├── database.py
-│   ├── models.py
-│   └── schemas.py
+│   ├── ai_service.py     # Lógica de integração com a IA (Gemini)
+│   ├── auth.py           # Funções de autenticação e JWT
+│   ├── contracts.py      # Rotas da API para /contracts, lógica de upload e extração
+│   ├── database.py       # Configuração do banco de dados (SQLAlchemy + SQLite)
+│   ├── main.py           # Ponto de entrada principal do FastAPI (serve o front-end)
+│   ├── models.py         # Modelos de dados do SQLAlchemy
+│   └── schemas.py        # Modelos de dados do Pydantic (validação de request/response)
+│
+├── static/
+│   └── index.html        # O front-end completo (HTML/CSS/JS)
+│
 ├── tests/
-│   └── test_auth.py
-├── .env
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
+│   └── test_auth.py      #
+│
+├── .env                  # Armazena variáveis de ambiente de forma segura
+├── Dockerfile            # Instruções para construir a imagem Docker
+├── docker-compose.yml    # Configurações do Docker Compose
+├── requirements.txt      # Dependências Python
+└── README.md             # Este arquivo
 ```
