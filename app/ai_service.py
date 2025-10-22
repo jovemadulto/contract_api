@@ -20,12 +20,12 @@ class ModelAnswer(BaseModel):
     - Cláusula de Rescisão
     """
 
-    contratante: str
-    contratado: str
+    contratante: list[str]
+    contratado: list[str]
     valor_bens: str
-    obrigacoes_contratante: str
-    obrigacoes_contratada: str
-    objeto: str
+    obrigacoes_contratante: list[str]
+    obrigacoes_contratada: list[str]
+    objeto: list[str]
     vigencia: str
     clausula_rescisao: str
 
@@ -56,8 +56,15 @@ def extract_contract_info(contract_content: str) -> dict:
     )
 
     response = response.model_dump().get("parsed")[0]  # -> dict
-    response["obrigacoes_contratante"] = json.dumps(response["obrigacoes_contratante"])
-    response["obrigacoes_contratada"] = json.dumps(response["obrigacoes_contratada"])
+
+    for field in [
+        "contratante",
+        "contratado",
+        "objeto",
+        "obrigacoes_contratante",
+        "obrigacoes_contratada",
+    ]:
+        response[field] = json.dumps(response[field])
 
     pprint(response)
 
